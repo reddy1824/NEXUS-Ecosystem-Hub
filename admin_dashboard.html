@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusTech SOC | Admin WAF Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617; 
+            --surface: rgba(15, 23, 42, 0.7); 
+            --border: rgba(51, 65, 85, 0.8); 
+            --text: #f8fafc;
+            --text-muted: #94a3b8; 
+            --green: #10b981; 
+            --red: #f43f5e; 
+            --orange: #f59e0b; 
+            --blue: #3b82f6;
+            --cyan: #06b6d4;
+        }
+
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Admin Login Screen */
+        #admin-login-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #020617 0%, #0f172a 100%); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+        
+        .admin-login-box {
+            background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border);
+            padding: 40px; border-radius: 16px; text-align: center; width: 340px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 0 20px rgba(6, 182, 212, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-login-box h2 { color: var(--cyan); margin-top: 0; margin-bottom: 5px; font-weight: 800; font-size: 28px; text-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+        .admin-login-box p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px; }
+
+        .admin-input {
+            width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 8px;
+            border: 1px solid var(--border); background: rgba(0,0,0,0.5); color: white; box-sizing: border-box;
+            font-family: 'Outfit', sans-serif; transition: all 0.3s;
+        }
+        .admin-input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); }
+
+        .admin-btn {
+            background: linear-gradient(90deg, #2563eb, #06b6d4); color: white; border: none; padding: 14px;
+            width: 100%; border-radius: 8px; font-weight: 800; font-size: 16px; cursor: pointer; transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3); text-transform: uppercase; letter-spacing: 1px;
+        }
+        .admin-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(6, 182, 212, 0.5); }
+
+        #adminError {
+            color: var(--red); background: rgba(244, 63, 94, 0.1); padding: 12px; border-radius: 8px;
+            margin-bottom: 20px; font-size: 0.85rem; display: none; border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        /* Main Dashboard Content */
+        #main-admin-content { display: none; height: 100%; flex-direction: column; background: radial-gradient(circle at top right, rgba(15,23,42,1) 0%, rgba(2,6,23,1) 100%); }
+
+        header { background: rgba(15, 23, 42, 0.5); border-bottom: 1px solid var(--border); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); z-index: 10; }
+        header h1 { margin: 0; font-size: 1.4rem; color: var(--cyan); font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 10px rgba(6, 182, 212, 0.3); }
+
+        .status-badge { background: rgba(16, 185, 129, 0.1); color: var(--green); padding: 6px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 800; border: 1px solid rgba(16, 185, 129, 0.4); box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); transition: all 0.3s; letter-spacing: 1px; }
+        .status-badge.critical { background: rgba(244, 63, 94, 0.15); color: var(--red); border-color: rgba(244, 63, 94, 0.5); box-shadow: 0 0 20px rgba(244, 63, 94, 0.4); animation: pulse 1s infinite alternate; }
+
+        .dashboard { display: grid; grid-template-columns: 1fr 450px; gap: 20px; padding: 20px; flex-grow: 1; overflow-y: auto; }
+        
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .panel-header { padding: 12px 20px; border-bottom: 1px solid var(--border); font-weight: 800; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; letter-spacing: 1px; font-size: 0.9rem; color: #e2e8f0; }
+        .panel-content { padding: 20px; overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; }
+
+        /* Alerts Feed */
+        .alert { padding: 15px; border-radius: 10px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; background: linear-gradient(90deg, rgba(244, 63, 94, 0.15) 0%, rgba(0,0,0,0) 100%); border-left: 4px solid var(--red); animation: slideIn 0.3s ease-out; }
+        .alert-icon { font-size: 1.8rem; }
+        .alert-time { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; font-family: 'JetBrains Mono', monospace; }
+        .alert-title { font-weight: 800; margin-bottom: 5px; color: var(--red); letter-spacing: 0.5px; }
+        .alert-msg { font-size: 0.9rem; color: #cbd5e1; line-height: 1.4; }
+        
+        .geo-tag { display: inline-block; background: rgba(245, 158, 11, 0.1); color: var(--orange); padding: 4px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; margin-top: 8px; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .std-log { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; animation: slideIn 0.2s ease-out; }
+
+        /* Action Cards */
+        .action-card { background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
+        .btn-kill { background: linear-gradient(90deg, #e11d48, #be123c); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%; box-shadow: 0 4px 15px rgba(225, 29, 72, 0.4); transition: all 0.2s; letter-spacing: 2px; }
+        .btn-kill:hover { box-shadow: 0 8px 25px rgba(225, 29, 72, 0.6); transform: scale(1.02); }
+        .btn-kill:disabled { background: #334155; box-shadow: none; cursor: not-allowed; color: #94a3b8; transform: none; }
+
+        /* Forensics History Table */
+        .history-row { display: flex; justify-content: space-between; font-size: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px 0; font-family: 'JetBrains Mono', monospace; }
+        .history-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 5px; }
+
+        .metric-box { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; }
+
+        #securePopup {
+            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(90deg, #059669, #10b981); color: white; padding: 18px 40px; border-radius: 12px; font-weight: 800; letter-spacing: 1px;
+            z-index: 1000; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); border: 1px solid #34d399;
+            animation: slideDown 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    </style>
+</head>
+<body>
+
+    <!-- SECURE ADMIN LOGIN SCREEN -->
+    <div id="admin-login-screen">
+        <div class="admin-login-box">
+            <h2>NEXUS SOC</h2>
+            <p>Classified Threat Intelligence</p>
+            <div id="adminError"></div>
+            <input type="text" id="adminUser" class="admin-input" placeholder="Admin Email" autocomplete="new-password">
+            <input type="password" id="adminPass" class="admin-input" placeholder="Password" autocomplete="new-password">
+            <button class="admin-btn" onclick="handleAdminLogin()">INITIALIZE</button>
+        </div>
+    </div>
+
+    <!-- MAIN ADMIN CONTENT -->
+    <div id="main-admin-content">
+        <div id="securePopup">
+            ✅ THREAT MITIGATED: USER SESSION SECURED
+        </div>
+
+        <header>
+            <h1>🛡️ NEXUSTECH SOC DASHBOARD</h1>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <button class="btn-kill" style="padding: 6px 15px; font-size: 0.8rem; background: #334155; box-shadow: none;" onclick="sessionStorage.removeItem('admin_auth'); location.reload();">LOGOUT ADMIN</button>
+                <div class="status-badge" id="globalStatus">SYSTEM SECURE</div>
+            </div>
+        </header>
+
+        <div class="dashboard">
+            <!-- Main Feed -->
+            <div class="panel">
+                <div class="panel-header"><span>LIVE NETWORK TRAFFIC</span></div>
+                <div class="panel-content" id="alertFeed"></div>
+            </div>
+
+            <!-- Controls Sidebar (EXPANDED TO 450px) -->
+            <div style="display: flex; flex-direction: column;">
+                
+                <div class="panel" style="margin-bottom: 15px;">
+                    <div class="panel-header"><span>ACTIVE INCIDENT RESPONSE</span></div>
+                    <div class="panel-content" style="padding: 15px;">
+                        
+                        <div class="action-card">
+                            <h3 style="margin-top:0; color: var(--red); font-size: 1.1rem; letter-spacing: 1px; text-align: center;">EMERGENCY OVERRIDE</h3>
+                            <button class="btn-kill" id="killBtn" onclick="killHackerConnection()">BLOCK HACKER IP</button>
+                        </div>
+
+                        <div class="action-card" style="margin-bottom: 0;">
+                            <h3 style="margin-top:0; font-size: 0.95rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; color: var(--cyan); letter-spacing: 1px;">THREAT ACTOR PROFILE</h3>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;"><strong>Source IP:</strong> <span id="hackerIp" style="font-family: 'JetBrains Mono';">None Detected</span></div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;"><strong>Live GPS:</strong> <span id="hackerGeo" style="color: var(--orange); font-weight: bold; font-family: 'JetBrains Mono';">N/A</span></div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;"><strong>Target User:</strong> <span id="hackerTarget" style="color: var(--blue); font-weight: bold;">None</span></div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);"><strong>Active Vector:</strong> <span id="hackerVector" style="color: var(--red); font-weight: bold;">STANDBY</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History & Analytics Box (EXPANDED SIZE) -->
+                <div class="panel" style="flex-grow: 1; min-height: 450px;">
+                    <div class="panel-header"><span>FORENSICS & METRICS</span></div>
+                    <div class="panel-content" style="padding: 15px; display: flex; flex-direction: column;">
+                        
+                        <div style="font-size: 0.9rem; font-weight: 800; margin-bottom: 10px; color: var(--cyan);">INCIDENT LOG</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); font-weight: bold; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                            <span style="flex: 1.2;">Date/Time</span>
+                            <span style="flex: 1;">Actor</span>
+                            <span style="flex: 1.5;">Location</span>
+                            <span style="flex: 1;">Action</span>
+                        </div>
+                        <div id="historyTable" style="flex-grow: 1; min-height: 250px; overflow-y: auto; margin-bottom: 20px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 10px;">
+                            <div style="font-size: 0.8rem; text-align: center; margin-top: 20px; color: #475569;">Awaiting persistent network data...</div>
+                        </div>
+
+                        <div style="font-size: 0.9rem; font-weight: 800; margin-bottom: 10px; color: var(--cyan);">DWELL TIME ANALYSIS</div>
+                        <div class="metric-box">
+                            <span style="color: var(--blue);">Legitimate User Session:</span> <span id="userDwell" style="font-weight: bold; font-family: 'JetBrains Mono';">0s</span>
+                        </div>
+                        <div class="metric-box">
+                            <span style="color: var(--red);">Hacker/Attacker Session:</span> <span id="hackerDwell" style="font-weight: bold; font-family: 'JetBrains Mono';">0s</span>
+                        </div>
+                        <div class="metric-box" style="border: 1px dashed rgba(255,255,255,0.2); background: transparent;">
+                            <span>Time Differential:</span> <span id="dwellDiff" style="font-family: 'JetBrains Mono'; color: var(--cyan);">0s</span>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div> 
+
+    <script>
+        function handleAdminLogin() {
+            const u = document.getElementById('adminUser').value.trim();
+            const p = document.getElementById('adminPass').value;
+            const err = document.getElementById('adminError');
+
+            if (u === 'mohanreddyn18@gmail.com' && p === 'mohanreddyn18') {
+                sessionStorage.setItem('admin_auth', 'true');
+                document.getElementById('admin-login-screen').style.display = 'none';
+                document.getElementById('main-admin-content').style.display = 'flex';
+                analyzeLogs(); // Force render immediately on login
+            } else {
+                err.style.display = 'block';
+                err.innerText = "ACCESS DENIED: Unauthorized Credentials.";
+            }
+        }
+
+        if (sessionStorage.getItem('admin_auth') === 'true') {
+            document.getElementById('admin-login-screen').style.display = 'none';
+            document.getElementById('main-admin-content').style.display = 'flex';
+        }
+
+        let processedTimestamps = new Set();
+        
+        if (localStorage.getItem('hacker_blocked') === 'true') {
+            const btn = document.getElementById('killBtn');
+            btn.disabled = true; btn.innerText = "IP BLOCKED"; 
+            document.getElementById('globalStatus').innerText = "THREAT MITIGATED";
+        }
+
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'app_network_logs') analyzeLogs();
+        });
+
+        function analyzeLogs() {
+            // Logs are persistently fetched from localStorage, meaning they survive logouts and refreshes.
+            const logs = JSON.parse(localStorage.getItem('app_network_logs') || '[]');
+            
+            let firstUserMs = null, lastUserMs = null;
+            let firstHackerMs = null, lastHackerMs = null;
+
+            document.getElementById('historyTable').innerHTML = ''; // Rebuild exact history
+
+            logs.forEach(log => {
+                if (log.timestampMs) {
+                    if (log.actor !== 'Hacker') {
+                        if (!firstUserMs) firstUserMs = log.timestampMs;
+                        lastUserMs = log.timestampMs;
+                    } else {
+                        if (!firstHackerMs) firstHackerMs = log.timestampMs;
+                        lastHackerMs = log.timestampMs;
+                    }
+                }
+
+                // Append to History Box (Required Details: Date, Time, Location, Actor, Action)
+                const dateOnly = new Date(log.timestampMs || Date.now()).toLocaleDateString();
+                const dateTimeStr = `${dateOnly} ${log.timestamp}`;
+                const locStr = log.geo ? "GPS Tracked" : log.ip;
+                
+                const row = document.createElement('div');
+                row.className = 'history-row';
+                row.style.color = log.actor === 'Hacker' ? 'var(--red)' : '#94a3b8';
+                
+                row.innerHTML = `
+                    <span style="flex: 1.2;">${dateTimeStr}</span> 
+                    <span style="flex: 1;">${log.actor}</span> 
+                    <span style="flex: 1.5; font-size: 0.7rem;">${locStr}</span> 
+                    <span style="flex: 1;">${log.endpoint.split('?')[0].replace('/api/', '')}</span>
+                `;
+                document.getElementById('historyTable').prepend(row); // Prepend to show newest first
+
+                const uniqueId = log.timestamp + log.actor + log.details;
+                if (processedTimestamps.has(uniqueId)) return;
+                processedTimestamps.add(uniqueId);
+                
+                if (log.actor === 'Hacker') {
+                    document.getElementById('hackerIp').innerText = log.ip;
+                    document.getElementById('hackerIp').style.color = "var(--red)";
+                    document.getElementById('hackerGeo').innerText = log.geo || "Unknown GPS";
+                    
+                    let targetMatch = log.details.match(/username=([^&]+)|target=([^&]+)|user=([^&]+)/);
+                    if(targetMatch) document.getElementById('hackerTarget').innerText = targetMatch[1] || targetMatch[2] || targetMatch[3];
+
+                    let attackType = "ACCOUNT COMPROMISE";
+                    if (log.endpoint === '/api/profile/update') attackType = "DATASET MODIFICATION";
+                    if (log.endpoint.includes('/api/cart/export')) attackType = "DATA EXFILTRATION";
+                    if (log.endpoint === '/api/payment/process') attackType = "PAYMENT DATA THEFT";
+                    
+                    document.getElementById('hackerVector').innerText = attackType;
+                }
+
+                if (log.actor === 'Hacker' && log.action === 'POST' && log.endpoint === '/api/profile/update') {
+                    createCriticalAlert(log, "DATA MODIFICATION ATTACK", `Hacker maliciously altered user dataset. Details: ${log.details}`);
+                }
+                else if (log.actor === 'Hacker' && log.action === 'GET' && log.endpoint.includes('/api/cart/export')) {
+                    createCriticalAlert(log, "DATA EXFILTRATION", `Hacker dumping private user datasets to C2 server!`);
+                }
+                else if (log.actor === 'Hacker' && log.action === 'POST' && log.endpoint === '/api/auth/login') {
+                    createCriticalAlert(log, "ACCOUNT TAKEOVER", `Hacker breached system using stolen credentials!`);
+                }
+                else if (log.actor === 'Hacker' && log.action === 'POST' && log.endpoint === '/api/payment/process') {
+                    createCriticalAlert(log, "FINANCIAL DATA THEFT", `Hacker intercepted plain-text credit card transaction! Data: ${log.details}`);
+                }
+                else {
+                    createStandardLog(log);
+                }
+            });
+
+            // Calculate Dwell Time
+            let uDwell = firstUserMs ? Math.floor((lastUserMs - firstUserMs) / 1000) : 0;
+            let hDwell = firstHackerMs ? Math.floor((lastHackerMs - firstHackerMs) / 1000) : 0;
+            
+            if (firstUserMs && uDwell === 0) uDwell = 1;
+            if (firstHackerMs && hDwell === 0) hDwell = 1;
+
+            document.getElementById('userDwell').innerText = uDwell + "s";
+            document.getElementById('hackerDwell').innerText = hDwell + "s";
+            document.getElementById('dwellDiff').innerText = Math.abs(uDwell - hDwell) + "s";
+
+            // React to Hacker Bypass
+            if (localStorage.getItem('hacker_blocked') !== 'true') {
+                const btn = document.getElementById('killBtn');
+                if (btn.disabled) {
+                    btn.disabled = false; btn.innerText = "BLOCK HACKER IP"; 
+                    document.getElementById('globalStatus').className = "status-badge critical";
+                    document.getElementById('globalStatus').innerText = "BREACH DETECTED";
+                }
+            }
+        }
+
+        function createCriticalAlert(log, title, msg) {
+            document.getElementById('globalStatus').className = "status-badge critical";
+            document.getElementById('globalStatus').innerText = "BREACH DETECTED";
+
+            const container = document.getElementById('alertFeed');
+            const alert = document.createElement('div');
+            alert.className = 'alert';
+            alert.innerHTML = `
+                <div class="alert-icon">🚨</div>
+                <div>
+                    <div class="alert-time">${log.timestamp} | IP: ${log.ip}</div>
+                    <div class="alert-title">${title}</div>
+                    <div class="alert-msg">${msg}</div>
+                    ${log.geo ? `<div class="geo-tag">📍 GPS: ${log.geo}</div>` : ''}
+                </div>
+            `;
+            container.prepend(alert);
+        }
+
+        function createStandardLog(log) {
+            const container = document.getElementById('alertFeed');
+            const entry = document.createElement('div');
+            entry.className = 'std-log';
+            const color = log.actor === 'Hacker' ? 'var(--red)' : 'var(--blue)';
+            
+            entry.innerHTML = `
+                <span style="color: rgba(255,255,255,0.3)">[${log.timestamp}]</span> 
+                <span style="color: ${color}; font-weight: bold;">[${log.actor}]</span> 
+                <span style="color: rgba(255,255,255,0.4);">(${log.ip})</span>
+                <span style="color: #e2e8f0; margin-left: 5px;">${log.action}</span> 
+                <span style="color: var(--green)">${log.endpoint}</span>
+            `;
+            container.prepend(entry);
+        }
+
+        function killHackerConnection() {
+            localStorage.setItem('hacker_blocked', 'true');
+            localStorage.setItem('admin_security_email', Date.now().toString()); 
+            
+            // Permanently secure the target ID
+            const targetId = document.getElementById('hackerTarget').innerText;
+            if (targetId && targetId !== 'None') {
+                let securedList = JSON.parse(localStorage.getItem('secured_users') || '[]');
+                if (!securedList.includes(targetId.toLowerCase())) {
+                    securedList.push(targetId.toLowerCase());
+                    localStorage.setItem('secured_users', JSON.stringify(securedList));
+                }
+            }
+            
+            const btn = document.getElementById('killBtn');
+            btn.disabled = true; btn.innerText = "IP BLOCKED"; 
+            document.getElementById('globalStatus').className = "status-badge";
+            document.getElementById('globalStatus').innerText = "THREAT MITIGATED";
+            
+            const popup = document.getElementById('securePopup');
+            popup.style.display = 'block';
+            setTimeout(() => { popup.style.display = 'none'; }, 5000); 
+        }
+
+        // Run on load so persistent data shows up immediately
+        analyzeLogs();
+    </script>
+</body>
+</html>

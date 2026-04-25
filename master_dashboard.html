@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Control | NexusTech vs ShadowNet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: #0b0f19;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #151a25;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-bottom: 1px solid #2a3441;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .header-title {
+            text-align: center;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            color: #8b949e;
+            font-weight: 700;
+        }
+        .header-title span { color: #fff; }
+
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-label {
+            color: #8b949e;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-right: 5px;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        .btn:active { transform: translateY(1px); }
+
+        .btn-user1 { background: #1a73e8; color: white; }
+        .btn-user2 { background: #8b5cf6; color: white; }
+        .btn-hacker { background: #00cc00; color: #000; }
+        .btn-admin { background: #ef4444; color: white; }
+        
+        .btn-split { background: #2a3441; color: white; border: 1px solid #444; }
+        .btn-reset { background: #aa0000; color: white; margin-left: 15px; }
+
+        /* Container Layouts */
+        .container {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .container.flex-row {
+            display: flex;
+            flex-direction: row;
+            gap: 4px;
+        }
+
+        .container.grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .frame-wrapper {
+            position: relative;
+            flex-grow: 1;
+            height: 100%;
+            display: none; /* Hidden by default */
+        }
+        
+        .frame-wrapper.active {
+            display: block;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #0b0f19;
+        }
+
+        .overlay-label {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 20;
+            text-transform: uppercase;
+        }
+        
+        #label-user1 { color: #1a73e8; border: 1px solid #1a73e8; }
+        #label-user2 { color: #8b5cf6; border: 1px solid #8b5cf6; }
+        #label-hacker { color: #00ff00; border: 1px solid #00ff00; }
+        #label-admin { color: #ef4444; border: 1px solid #ef4444; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-title"><span>NEXUS</span> Ecosystem Simulation Hub</div>
+        
+        <div class="controls-row">
+            <span class="control-label">Full Screen:</span>
+            <button class="btn btn-user1" onclick="setView('u1')">🖥️ User 1</button>
+            <button class="btn btn-user2" onclick="setView('u2')">🖥️ User 2</button>
+            <button class="btn btn-hacker" onclick="setView('h')">🥷 Hacker</button>
+            <button class="btn btn-admin" onclick="setView('a')">🛡️ Admin SOC</button>
+            
+            <div style="width: 20px;"></div> <!-- Spacer -->
+            
+            <span class="control-label">Split Screens:</span>
+            <button class="btn btn-split" onclick="setView('s2')">🌗 2-Way (U1 + Hack)</button>
+            <button class="btn btn-split" onclick="setView('s3')">🎛️ 3-Way (U1 + Hack + SOC)</button>
+            <button class="btn btn-split" onclick="setView('s4')">🔲 4-Way (All)</button>
+            
+            <button class="btn btn-reset" onclick="clearLogs()">🗑️ Reset Simulation</button>
+        </div>
+    </div>
+
+    <div class="container grid-4" id="mainContainer">
+        <!-- User 1 -->
+        <div class="frame-wrapper" id="f-u1">
+            <div class="overlay-label" id="label-user1">USER 1</div>
+            <iframe src="user_dashboard.html?user=1"></iframe>
+        </div>
+        
+        <!-- User 2 -->
+        <div class="frame-wrapper" id="f-u2">
+            <div class="overlay-label" id="label-user2">USER 2</div>
+            <iframe src="user_dashboard.html?user=2"></iframe>
+        </div>
+
+        <!-- Hacker -->
+        <div class="frame-wrapper" id="f-h">
+            <div class="overlay-label" id="label-hacker">HACKER TERMINAL</div>
+            <iframe src="hacker_dashboard.html"></iframe>
+        </div>
+
+        <!-- Admin SOC -->
+        <div class="frame-wrapper" id="f-a">
+            <div class="overlay-label" id="label-admin">ADMIN SOC</div>
+            <iframe src="admin_dashboard.html"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function setView(mode) {
+            const u1 = document.getElementById('f-u1');
+            const u2 = document.getElementById('f-u2');
+            const h = document.getElementById('f-h');
+            const a = document.getElementById('f-a');
+            const container = document.getElementById('mainContainer');
+
+            // Hide all first
+            [u1, u2, h, a].forEach(el => el.classList.remove('active'));
+
+            // Single Views
+            if (mode === 'u1') { u1.classList.add('active'); container.className = 'container flex-row'; }
+            else if (mode === 'u2') { u2.classList.add('active'); container.className = 'container flex-row'; }
+            else if (mode === 'h') { h.classList.add('active'); container.className = 'container flex-row'; }
+            else if (mode === 'a') { a.classList.add('active'); container.className = 'container flex-row'; }
+            
+            // Split Views
+            else if (mode === 's2') { 
+                u1.classList.add('active'); 
+                h.classList.add('active'); 
+                container.className = 'container flex-row'; 
+            }
+            else if (mode === 's3') { 
+                u1.classList.add('active'); 
+                h.classList.add('active'); 
+                a.classList.add('active'); 
+                container.className = 'container flex-row'; 
+            }
+            else if (mode === 's4') { 
+                u1.classList.add('active'); 
+                u2.classList.add('active'); 
+                h.classList.add('active'); 
+                a.classList.add('active'); 
+                container.className = 'container grid-4'; 
+            }
+        }
+
+        function clearLogs() {
+            localStorage.removeItem('app_network_logs');
+            localStorage.removeItem('hacker_blocked');
+            localStorage.removeItem('active_sessions');
+            localStorage.removeItem('admin_security_email');
+            localStorage.removeItem('secured_users');
+            alert("Simulation Reset! All logs cleared and connections restored.");
+            document.querySelectorAll('iframe').forEach(f => f.contentWindow.location.reload());
+        }
+
+        // Start in 4-Way mode by default
+        setView('s4');
+    </script>
+</body>
+</html>

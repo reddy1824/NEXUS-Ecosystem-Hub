@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShadowNet | Attacker Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --term-bg: #050505;
+            --term-fg: #00ff41;
+            --term-red: #ff003c;
+            --term-blue: #00f0ff;
+            --term-panel: rgba(0, 20, 0, 0.8);
+            --term-border: #00ff41;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        body { 
+            background-color: var(--term-bg); 
+            color: var(--term-fg); 
+            font-family: 'Share Tech Mono', monospace; 
+            margin: 0; padding: 20px; 
+            display: flex; flex-direction: column; height: 100vh; box-sizing: border-box;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Scanline Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        header { 
+            border-bottom: 2px solid var(--term-border); padding-bottom: 15px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            text-shadow: 0 0 10px var(--term-fg);
+            position: relative; z-index: 10;
+        }
+
+        h1 { margin: 0; font-size: 1.8rem; letter-spacing: 2px; }
+        .glitch { position: relative; }
+        .glitch::before, .glitch::after {
+            content: "SHADOWNET TERMINAL v2.4";
+            position: absolute; top: 0; left: 0; opacity: 0.8;
+        }
+        .glitch::before { left: 2px; text-shadow: -2px 0 var(--term-red); animation: glitch-anim-1 2s infinite linear alternate-reverse; }
+        .glitch::after { left: -2px; text-shadow: -2px 0 var(--term-blue); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(20% 0 80% 0); }
+            20% { clip-path: inset(60% 0 10% 0); }
+            40% { clip-path: inset(40% 0 50% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(10% 0 70% 0); }
+            100% { clip-path: inset(30% 0 20% 0); }
+        }
+
+        .container { display: flex; gap: 20px; flex-grow: 1; overflow: hidden; position: relative; z-index: 10; }
+
+        .panel { 
+            background: var(--term-panel); border: 1px solid var(--term-border);
+            padding: 20px; display: flex; flex-direction: column;
+            box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1);
+        }
+
+        .panel-title { 
+            font-size: 1.2rem; border-bottom: 1px dashed var(--term-fg); 
+            padding-bottom: 10px; margin-bottom: 20px; text-transform: uppercase;
+        }
+
+        /* Left side: Exploit toolkit */
+        .tools-col { width: 350px; }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group span { display: block; margin-bottom: 5px; font-size: 0.9rem; }
+        input { 
+            background: #000; border: 1px solid var(--term-fg); color: var(--term-fg);
+            padding: 10px; width: 100%; box-sizing: border-box; font-family: inherit;
+            outline: none; transition: box-shadow 0.2s;
+        }
+        input:focus { box-shadow: 0 0 10px var(--term-fg); }
+
+        .btn { 
+            background: rgba(0, 255, 65, 0.2); border: 1px solid var(--term-fg); 
+            color: var(--term-fg); padding: 12px; width: 100%; cursor: pointer;
+            font-family: inherit; font-size: 1rem; font-weight: bold; margin-bottom: 10px;
+            transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { background: var(--term-fg); color: #000; box-shadow: 0 0 15px var(--term-fg); }
+        
+        .btn-red { border-color: var(--term-red); color: var(--term-red); background: rgba(255, 0, 60, 0.1); }
+        .btn-red:hover { background: var(--term-red); color: #000; box-shadow: 0 0 15px var(--term-red); }
+
+        /* Right side: Packet Sniffer */
+        .sniffer-col { flex-grow: 1; display: flex; flex-direction: column; }
+        #snifferLog { 
+            flex-grow: 1; background: #000; border: 1px solid #333; padding: 15px;
+            overflow-y: auto; font-size: 0.85rem; line-height: 1.5;
+        }
+        .log-entry { margin-bottom: 8px; border-bottom: 1px dashed #222; padding-bottom: 5px; }
+        .log-time { color: #888; }
+        .log-ip { color: var(--term-blue); }
+        .log-target { color: #fff; }
+        .log-payload { color: var(--term-red); }
+
+        /* Blocked Overlay */
+        #blockedOverlay {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 60, 0.9); z-index: 9999;
+            flex-direction: column; align-items: center; justify-content: center;
+            color: #fff; font-size: 3rem; text-shadow: 0 0 20px #000; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="blockedOverlay">
+        <div>CONNECTION SEVERED</div>
+        <div style="font-size: 1.5rem; margin-top: 20px;">IP BLOCKED BY HOST FIREWALL</div>
+        <div id="bypassTimer" style="font-size: 1.2rem; margin-top: 40px; color: var(--term-fg); text-shadow: 0 0 10px var(--term-fg);">INITIATING PROXY BYPASS IN: 15s</div>
+    </div>
+
+    <header>
+        <h1 class="glitch">SHADOWNET TERMINAL v2.4</h1>
+        <div><span style="color: var(--term-red);">Target:</span> <span id="activeTarget" style="text-shadow: 0 0 5px var(--term-fg);">NONE</span></div>
+    </header>
+
+    <div class="container">
+        <!-- Toolkit -->
+        <div class="panel tools-col">
+            <div class="panel-title">> Hijack Session</div>
+            <div class="input-group">
+                <span>> Target Email:</span>
+                <input type="text" id="targetUser" autocomplete="new-password" placeholder="user@example.com">
+            </div>
+            <div class="input-group">
+                <span>> Spoofed Password:</span>
+                <input type="password" id="targetPass" autocomplete="new-password" placeholder="******">
+            </div>
+            <button class="btn" onclick="handleLogin()" style="margin-top: 10px;">Execute Inject</button>
+
+            <div class="panel-title" style="margin-top: 30px;">> Exploit Modules</div>
+            <button class="btn btn-red" onclick="executeDefacement()">Deface Profile</button>
+            <button class="btn btn-red" onclick="executeExfiltration()">Exfiltrate Data</button>
+            <button class="btn btn-red" onclick="executeDDoS()">DDoS Endpoint</button>
+        </div>
+
+        <!-- Sniffer -->
+        <div class="panel sniffer-col">
+            <div class="panel-title">> Live Packet Sniffer</div>
+            <div id="snifferLog">
+                <div style="color: #666;">Waiting for network traffic...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTarget = null;
+        let isBlocked = false;
+        let bypassInterval = null;
+
+        let liveGeo = 'St. Petersburg, RUS [Proxy]';
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                liveGeo = `Tracked: Lat ${position.coords.latitude.toFixed(4)}, Lon ${position.coords.longitude.toFixed(4)}`;
+            }, function(error) {
+                console.log("Geo denied.");
+            });
+        }
+
+        // Kill Switch Listener
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'hacker_blocked' || e.key === 'app_network_logs') checkBlockStatus();
+        });
+
+        function checkBlockStatus() {
+            if (localStorage.getItem('hacker_blocked') === 'true') {
+                if (!isBlocked) {
+                    isBlocked = true;
+                    document.getElementById('blockedOverlay').style.display = 'flex';
+                    
+                    // Start 15s Bypass Timer
+                    let timeLeft = 15;
+                    document.getElementById('bypassTimer').innerText = `INITIATING PROXY BYPASS IN: ${timeLeft}s`;
+                    
+                    if (bypassInterval) clearInterval(bypassInterval);
+                    bypassInterval = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('bypassTimer').innerText = `INITIATING PROXY BYPASS IN: ${timeLeft}s`;
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(bypassInterval);
+                            // Bypass firewall!
+                            localStorage.removeItem('hacker_blocked');
+                            isBlocked = false;
+                            document.getElementById('blockedOverlay').style.display = 'none';
+                            
+                            // Log the bypass to the network so Admin sees it
+                            writeNetworkLog('POST', '/api/firewall/bypass', 'Advanced threat routed through new proxy. IP block bypassed!');
+                        }
+                    }, 1000);
+                }
+                return true;
+            }
+            
+            // If block was removed elsewhere
+            if (isBlocked) {
+                clearInterval(bypassInterval);
+                isBlocked = false;
+                document.getElementById('blockedOverlay').style.display = 'none';
+            }
+            
+            loadSniffer();
+            return false;
+        }
+
+        function handleLogin() {
+            if (checkBlockStatus()) return;
+            const user = document.getElementById('targetUser').value;
+            if(!user) { alert("Target Email required!"); return; }
+
+            if (user === 'mohanreddyn18@gmail.com') {
+                alert("ACCESS DENIED: Cannot hijack Administrator accounts through this vector.");
+                return;
+            }
+
+            let securedList = JSON.parse(localStorage.getItem('secured_users') || '[]');
+            if (securedList.includes(user.toLowerCase())) {
+                alert("ACCESS DENIED: This Target ID has been permanently secured and isolated by the Admin SOC. You cannot hijack this ID again. Select a different target.");
+                return;
+            }
+
+            currentTarget = user;
+            document.getElementById('activeTarget').innerText = user;
+            writeNetworkLog('POST', '/api/auth/login', `username=${user}&password=***SPOOFED***`);
+        }
+
+        function executeDefacement() {
+            if(!currentTarget) { alert("Hijack a session first!"); return; }
+            writeNetworkLog('POST', '/api/profile/update', `target=${currentTarget}&payload=<script>alert("HACKED")<\/script>`);
+        }
+
+        function executeExfiltration() {
+            if(!currentTarget) { alert("Hijack a session first!"); return; }
+            writeNetworkLog('GET', `/api/cart/export?user=${currentTarget}`, 'DUMP_ALL_RECORDS');
+        }
+
+        function executeDDoS() {
+            if(!currentTarget) { alert("Hijack a session first!"); return; }
+            for(let i=0; i<15; i++) {
+                writeNetworkLog('GET', `/api/resource/${Math.floor(Math.random()*1000)}`, 'FLOOD_REQUEST');
+            }
+        }
+
+        function writeNetworkLog(action, endpoint, details) {
+            if (checkBlockStatus()) return;
+            const logs = JSON.parse(localStorage.getItem('app_network_logs') || '[]');
+            logs.push({
+                timestamp: new Date().toLocaleTimeString(), timestampMs: Date.now(),
+                actor: 'Hacker', action: action, endpoint: endpoint,
+                details: details, ip: '172.68.21.99', geo: liveGeo
+            });
+            if(logs.length > 50) logs.shift();
+            localStorage.setItem('app_network_logs', JSON.stringify(logs));
+            loadSniffer();
+        }
+
+        function loadSniffer() {
+            if (isBlocked) return;
+            const logs = JSON.parse(localStorage.getItem('app_network_logs') || '[]');
+            const container = document.getElementById('snifferLog');
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<div style="color: #666;">Waiting for network traffic...</div>';
+                return;
+            }
+            
+            let html = '';
+            logs.forEach(log => {
+                let color = log.actor === 'Hacker' ? 'var(--term-red)' : 'var(--term-fg)';
+                html += `
+                    <div class="log-entry" style="color: ${color}">
+                        <span class="log-time">[${log.timestamp}]</span> 
+                        <span class="log-ip">${log.ip}</span> 
+                        <span class="log-target">${log.action} ${log.endpoint}</span> 
+                        <br><span class="log-payload">Payload: ${log.details}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        checkBlockStatus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusTech Store | User Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --amazon-nav: #131921;
+            --amazon-accent: #f59e0b;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; transition: all 0.3s ease; overflow-x: hidden; }
+        body.theme-user2 { --primary: #7c3aed; --primary-hover: #6d28d9; --bg: #f5f3ff; }
+
+        /* Login Screen */
+        #login-screen { display: flex; height: 100vh; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg) 0%, #cbd5e1 100%); }
+        .login-card { background: var(--surface); padding: 40px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .login-card h2 { margin-bottom: 8px; font-weight: 700; color: var(--text); }
+        .login-card p { color: var(--text-secondary); margin-bottom: 24px; }
+        .auth-input { width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 15px; background: #f8fafc; transition: all 0.2s; }
+        .auth-input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; width: 100%; box-sizing: border-box; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
+        .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); padding: 10px 15px; border-radius: 6px; font-weight: 500; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .btn-secondary:hover { background: #f1f5f9; }
+        #loginError { color: #dc2626; background: #fef2f2; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; display: none; border: 1px solid #fecaca; font-weight: 500; }
+
+        /* Dashboard */
+        #dashboard-screen { display: none; }
+        .navbar { background: var(--amazon-nav); color: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .logo { font-size: 24px; font-weight: 800; color: white; display: flex; align-items: center; gap: 5px; letter-spacing: -0.5px; }
+        .logo span { color: var(--amazon-accent); }
+        .search-bar { flex-grow: 1; max-width: 600px; margin: 0 40px; display: flex; box-shadow: 0 2px 5px rgba(0,0,0,0.2); border-radius: 6px; overflow: hidden; }
+        .search-bar input { width: 100%; padding: 12px 20px; border: none; outline: none; font-size: 15px; }
+        .search-bar button { background: var(--amazon-accent); border: none; padding: 12px 25px; cursor: pointer; font-size: 18px; transition: background 0.2s; }
+        .search-bar button:hover { background: #d97706; }
+        
+        .nav-links { display: flex; gap: 25px; align-items: center; }
+        .nav-link { cursor: pointer; color: white; display: flex; flex-direction: column; padding: 5px; border-radius: 4px; transition: background 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.1); }
+        .nav-link span:first-child { font-size: 12px; color: #cbd5e1; }
+        .nav-link span:last-child { font-size: 14px; font-weight: 700; }
+        .nav-link.active { border-bottom: 3px solid var(--amazon-accent); padding-bottom: 2px; }
+
+        .content { padding: 40px; max-width: 1300px; margin: 0 auto; }
+        .section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Products Grid */
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
+        .product-card { background: var(--surface); border-radius: 12px; padding: 25px; border: 1px solid var(--border); text-align: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; justify-content: space-between; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border-color: var(--primary); }
+        .product-icon { font-size: 60px; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .product-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+        .product-price { color: #b91c1c; font-size: 20px; margin-bottom: 20px; font-weight: 800; }
+        .btn-amazon { background: #fbbf24; color: #111; font-weight: 600; box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3); }
+        .btn-amazon:hover { background: #f59e0b; }
+        
+        /* Cart & Orders */
+        .card-panel { background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); overflow: hidden; margin-bottom: 20px; }
+        .cart-table { width: 100%; border-collapse: collapse; }
+        .cart-table th, .cart-table td { padding: 18px 25px; text-align: left; border-bottom: 1px solid var(--border); }
+        .cart-table th { background: #f8fafc; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        
+        .checkout-box { background: white; padding: 30px; border: 1px solid var(--border); border-radius: 12px; max-width: 400px; margin-left: auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+
+        /* Profile & Security */
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .settings-panel { padding: 30px; }
+        .settings-panel h3 { margin-top: 0; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+
+        /* Modals & Toasts */
+        #paymentModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: white; padding: 40px; border-radius: 16px; width: 450px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); animation: zoomIn 0.3s ease-out; }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        #toast { position: fixed; bottom: 30px; right: 30px; background: #1e293b; color: white; padding: 15px 25px; border-radius: 8px; font-weight: 500; transform: translateY(100px); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-card">
+            <h2 id="loginTitle">Welcome Back</h2>
+            <p>Access your NexusTech account</p>
+            <div id="loginError"></div>
+            <input type="text" id="usernameInput" class="auth-input" placeholder="Email Address" autocomplete="new-password">
+            <input type="password" id="passwordInput" class="auth-input" placeholder="Password" autocomplete="new-password">
+            <button class="btn-primary" onclick="handleStandardLogin()">Secure Sign In</button>
+        </div>
+    </div>
+
+    <div id="dashboard-screen">
+        <nav class="navbar">
+            <div class="logo" id="navLogo">Nexus<span>Tech</span></div>
+            
+            <div class="search-bar">
+                <input type="text" placeholder="Search the ultimate catalog...">
+                <button onclick="logNetworkEvent('GET', '/api/search', 'Searched catalog')">🔍</button>
+            </div>
+
+            <div class="nav-links">
+                <div class="nav-link active" onclick="switchTab('products')">
+                    <span>Account</span>
+                    <span id="navName">Store</span>
+                </div>
+                <div class="nav-link" onclick="switchTab('orders')">
+                    <span>Returns</span>
+                    <span>& Orders</span>
+                </div>
+                <div class="nav-link" onclick="switchTab('cart')">
+                    <span>Shopping</span>
+                    <span>🛒 Cart (<span id="cartCount" style="color: var(--amazon-accent);">0</span>)</span>
+                </div>
+                <div class="nav-link" onclick="switchTab('profile')">
+                    <span>Settings</span>
+                    <span>Profile</span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="content">
+            <!-- PRODUCTS TAB -->
+            <div id="products-section" class="section active">
+                <h2 style="margin-bottom: 30px; font-weight: 800; font-size: 28px;">Recommended for you</h2>
+                <div class="products-grid" id="productGrid"></div>
+            </div>
+
+            <!-- CART TAB -->
+            <div id="cart-section" class="section">
+                <h2 style="margin-bottom: 30px; font-weight: 800; font-size: 28px;">Shopping Cart</h2>
+                <div id="emptyCartMsg" class="card-panel" style="padding: 60px; text-align: center; color: var(--text-secondary); font-size: 18px;">Your cart is currently empty. Start shopping!</div>
+                
+                <div id="cartContent" style="display: none;">
+                    <div class="card-panel">
+                        <table class="cart-table" id="cartTable"></table>
+                    </div>
+                    
+                    <div class="checkout-box">
+                        <h3 style="margin-top: 0;">Order Summary</h3>
+                        <div style="display: flex; justify-content: space-between; margin: 20px 0; font-size: 24px; font-weight: 800;">
+                            <span>Total:</span> <span id="cartTotal" style="color: #b91c1c;">$0.00</span>
+                        </div>
+                        <button class="btn-primary btn-amazon" onclick="openPaymentModal()">Proceed to Secure Checkout</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORDERS TAB -->
+            <div id="orders-section" class="section">
+                <h2 style="margin-bottom: 30px; font-weight: 800; font-size: 28px;">Your Orders</h2>
+                <div id="ordersList">
+                    <div class="card-panel" style="padding: 60px; text-align: center; color: var(--text-secondary);">No past orders found.</div>
+                </div>
+            </div>
+
+            <!-- PROFILE TAB -->
+            <div id="profile-section" class="section">
+                <h2 style="margin-bottom: 30px; font-weight: 800; font-size: 28px;">Account Settings</h2>
+                <div class="profile-grid">
+                    <!-- User Details -->
+                    <div class="card-panel settings-panel">
+                        <h3>Personal Information</h3>
+                        <p style="margin: 5px 0; color: var(--text-secondary);"><strong>Account ID:</strong> <span id="profId">USR-10293</span></p>
+                        <p style="margin: 5px 0; color: var(--text-secondary);"><strong>Email Address:</strong> <span id="profEmail">user@example.com</span></p>
+                        <p style="margin: 5px 0; color: var(--text-secondary);"><strong>Status:</strong> <span style="color: #16a34a; font-weight: bold;">Verified</span></p>
+                        <button class="btn-secondary" style="margin-top: 20px;" onclick="logNetworkEvent('POST', '/api/auth/logout', 'Logged out'); location.reload();">Sign Out</button>
+                    </div>
+
+                    <!-- Security & Password Change -->
+                    <div class="card-panel settings-panel">
+                        <h3>Security & Password</h3>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">Protect your account by regularly updating your password.</p>
+                        
+                        <label style="font-size: 13px; font-weight: 600; color: var(--text);">New Password</label>
+                        <input type="password" id="profileNewPass" class="auth-input" placeholder="Enter new strong password" autocomplete="new-password">
+                        
+                        <button class="btn-primary" onclick="changeProfilePassword()">Update Password</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAYMENT MODAL -->
+    <div id="paymentModal">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; font-weight: 800;">Secure Checkout</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 30px;">All transactions are secure and encrypted.</p>
+            
+            <label style="font-size: 13px; font-weight: 600;">Card Number</label>
+            <input type="text" id="ccNum" class="auth-input" placeholder="0000 0000 0000 0000" autocomplete="new-password">
+            
+            <div style="display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 13px; font-weight: 600;">Expiry</label>
+                    <input type="text" id="ccExp" class="auth-input" placeholder="MM/YY" autocomplete="new-password">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 13px; font-weight: 600;">CVV</label>
+                    <input type="password" id="ccCvv" class="auth-input" placeholder="123" autocomplete="new-password">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-top: 20px;">
+                <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('paymentModal').style.display='none'">Cancel</button>
+                <button class="btn-primary btn-amazon" style="flex: 1;" onclick="processPayment()">Pay Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECURITY EMAIL MODAL -->
+    <div id="emailModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 2000;">
+        <div style="background: white; padding: 0; border-radius: 16px; width: 500px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+            <div style="background: #dc2626; color: white; padding: 20px 30px; display: flex; align-items: center; gap: 15px;">
+                <span style="font-size: 28px;">📧</span>
+                <h3 style="margin: 0; font-weight: 800;" id="emailHeaderTitle">URGENT SECURITY ALERT</h3>
+            </div>
+            <div style="padding: 30px;">
+                <p><strong>From:</strong> NexusTech Admin SOC &lt;mohanreddyn18@gmail.com&gt;</p>
+                <p><strong>To:</strong> <span id="emailTargetUser" style="color: var(--primary); font-weight: bold;">User</span></p>
+                <p><strong>Subject: Immediate Action Required - Suspicious Activity Blocked</strong></p>
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 20px 0;">
+                <p style="line-height: 1.6; color: var(--text);">Our Security Operations Center has intercepted and blocked a malicious attack targeting your session. <strong>Your account is currently safe.</strong></p>
+                <p style="line-height: 1.6; color: var(--text);">However, your credentials may be exposed. You must update your password immediately to prevent future unauthorized access.</p>
+                
+                <div style="margin-top: 25px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                    <label style="font-size: 13px; font-weight: 600;">Create New Strong Password:</label>
+                    <input type="password" id="newSecurePass" class="auth-input" placeholder="Enter secure password" style="margin-bottom: 15px; margin-top: 8px;">
+                    <div style="display: flex; gap: 15px;">
+                        <button class="btn-primary" style="flex: 2; background: #dc2626;" onclick="submitNewPassword()">Update & Secure Account</button>
+                        <button class="btn-secondary" style="flex: 1;" onclick="snoozeAlert()">Snooze</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Action recorded</div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const userTheme = urlParams.get('user'); 
+        let simulatedIP = '192.168.1.101';
+
+        if (userTheme === '2') {
+            document.body.classList.add('theme-user2');
+            document.getElementById('loginTitle').innerText = "Welcome Back (User 2)";
+            simulatedIP = '192.168.1.102';
+        } else {
+            document.getElementById('loginTitle').innerText = "Welcome Back (User 1)";
+        }
+
+        let currentUser = 'Guest';
+        let cart = [];
+        let orders = [];
+
+        const catalog = [
+            {id: 1, icon: '💻', name: 'NexusBook Pro 16" M3', price: 1499.00},
+            {id: 2, icon: '📱', name: 'NexusPhone 15 Ultra', price: 999.00},
+            {id: 3, icon: '🎧', name: 'Sonic Studio Wireless', price: 299.00},
+            {id: 4, icon: '⌚', name: 'Quantum Watch Series 5', price: 249.00},
+            {id: 5, icon: '🖥️', name: 'UltraVision 4K 144Hz Monitor', price: 550.00},
+            {id: 6, icon: '🖱️', name: 'ErgoMaster Pro Mouse', price: 99.00},
+            {id: 7, icon: '⌨️', name: 'MechKey RGB Tactile', price: 140.00},
+            {id: 8, icon: '🎮', name: 'PlayDeck OLED Handheld', price: 549.00}
+        ];
+
+        // Init Store
+        const grid = document.getElementById('productGrid');
+        catalog.forEach(p => {
+            grid.innerHTML += `
+                <div class="product-card">
+                    <div class="product-icon">${p.icon}</div>
+                    <div class="product-title">${p.name}</div>
+                    <div class="product-price">$${p.price.toFixed(2)}</div>
+                    <button class="btn-primary btn-amazon" onclick="addToCart(${p.id})">Add to Cart</button>
+                </div>
+            `;
+        });
+
+        function showError(msg) {
+            const err = document.getElementById('loginError');
+            err.innerText = msg; err.style.display = 'block';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg; toast.style.transform = 'translateY(0)';
+            setTimeout(() => { toast.style.transform = 'translateY(100px)'; }, 3000);
+        }
+
+        function logNetworkEvent(action, endpoint, details) {
+            const logs = JSON.parse(localStorage.getItem('app_network_logs') || '[]');
+            logs.push({ timestamp: new Date().toLocaleTimeString(), timestampMs: Date.now(), actor: currentUser, action: action, endpoint: endpoint, details: details, ip: simulatedIP });
+            if(logs.length > 50) logs.shift();
+            localStorage.setItem('app_network_logs', JSON.stringify(logs));
+        }
+
+        function getActiveSessions() { return JSON.parse(localStorage.getItem('active_sessions') || '[]'); }
+        function addActiveSession(user) {
+            const sessions = getActiveSessions();
+            if (!sessions.includes(user.toLowerCase())) { sessions.push(user.toLowerCase()); localStorage.setItem('active_sessions', JSON.stringify(sessions)); }
+        }
+        function removeActiveSession(user) {
+            let sessions = getActiveSessions();
+            sessions = sessions.filter(s => s !== user.toLowerCase());
+            localStorage.setItem('active_sessions', JSON.stringify(sessions));
+        }
+
+        function handleStandardLogin() {
+            const user = document.getElementById('usernameInput').value.trim();
+            const pass = document.getElementById('passwordInput').value;
+            document.getElementById('loginError').style.display = 'none';
+
+            if(!user) { showError("Please enter an email address."); return; }
+            if (user === 'mohanreddyn18@gmail.com') { showError("ACCESS DENIED: Administrator accounts cannot be used on the public storefront."); return; }
+
+            const activeSessions = getActiveSessions();
+            if (activeSessions.includes(user.toLowerCase())) { showError("ACCESS DENIED: This username is active on another device."); return; }
+
+            addActiveSession(user);
+            currentUser = user;
+
+            logNetworkEvent('POST', '/api/auth/login', `username=${user}&password=${pass}`);
+            
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard-screen').style.display = 'block';
+            document.getElementById('navName').innerText = user.split('@')[0];
+            document.getElementById('profEmail').innerText = user;
+            showToast('Successfully signed in');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId + '-section').classList.add('active');
+            event.currentTarget.classList.add('active');
+            logNetworkEvent('GET', `/api/${tabId}`, `User navigated to ${tabId}`);
+        }
+
+        function addToCart(id) {
+            const item = catalog.find(p => p.id === id);
+            cart.push(item);
+            document.getElementById('cartCount').innerText = cart.length;
+            updateCartUI();
+            logNetworkEvent('POST', '/api/cart/add', `item_id=${id}&name=${item.name}&price=${item.price}`);
+            showToast('Added to Cart');
+        }
+
+        function updateCartUI() {
+            if (cart.length === 0) {
+                document.getElementById('emptyCartMsg').style.display = 'block';
+                document.getElementById('cartContent').style.display = 'none';
+            } else {
+                document.getElementById('emptyCartMsg').style.display = 'none';
+                document.getElementById('cartContent').style.display = 'block';
+                
+                let html = '<tr><th>Product</th><th>Price</th><th>Action</th></tr>';
+                let total = 0;
+                cart.forEach((item, index) => {
+                    html += `<tr>
+                        <td style="font-weight: 500;">${item.icon} ${item.name}</td>
+                        <td style="color:#b91c1c; font-weight:700;">$${item.price.toFixed(2)}</td>
+                        <td><button class="btn-secondary" onclick="cart.splice(${index},1); updateCartUI();">Remove</button></td>
+                    </tr>`;
+                    total += item.price;
+                });
+                document.getElementById('cartTable').innerHTML = html;
+                document.getElementById('cartTotal').innerText = `$${total.toFixed(2)}`;
+                document.getElementById('cartCount').innerText = cart.length;
+            }
+        }
+
+        function openPaymentModal() {
+            logNetworkEvent('GET', '/api/checkout/initiate', 'User started checkout process');
+            document.getElementById('paymentModal').style.display = 'flex';
+        }
+
+        function processPayment() {
+            const cc = document.getElementById('ccNum').value;
+            const exp = document.getElementById('ccExp').value;
+            const cvv = document.getElementById('ccCvv').value;
+
+            if(!cc || !exp || !cvv) { alert("Please fill all payment details."); return; }
+
+            // High Value Target Event
+            logNetworkEvent('POST', '/api/payment/process', `cc_num=${cc}&exp=${exp}&cvv=${cvv}&amount=${document.getElementById('cartTotal').innerText}`);
+
+            const orderId = 'ORD-' + Math.floor(Math.random() * 900000 + 100000);
+            orders.unshift({ id: orderId, date: new Date().toLocaleDateString(), total: document.getElementById('cartTotal').innerText, items: cart.length });
+            
+            cart = []; updateCartUI(); updateOrdersUI();
+            
+            document.getElementById('paymentModal').style.display = 'none';
+            document.getElementById('ccNum').value = ''; document.getElementById('ccExp').value = ''; document.getElementById('ccCvv').value = '';
+            
+            switchTab('orders');
+            showToast('Order placed successfully!');
+        }
+
+        function updateOrdersUI() {
+            const container = document.getElementById('ordersList');
+            if (orders.length === 0) return;
+            
+            let html = '';
+            orders.forEach(o => {
+                html += `
+                    <div class="card-panel" style="margin-bottom: 20px;">
+                        <div style="background: #f8fafc; padding: 15px 20px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); font-size: 14px;">
+                            <div><strong style="color: var(--text-secondary);">ORDER PLACED</strong><br>${o.date}</div>
+                            <div><strong style="color: var(--text-secondary);">TOTAL</strong><br>${o.total}</div>
+                            <div><strong style="color: var(--text-secondary);">ORDER #</strong> ${o.id}</div>
+                        </div>
+                        <div style="padding: 25px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="margin: 0 0 8px 0; color: #16a34a;">Arriving tomorrow</h3>
+                                <p style="margin: 0; color: var(--text-secondary);">${o.items} items in package</p>
+                            </div>
+                            <button class="btn-secondary" onclick="trackOrder('${o.id}')">Track Package</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function trackOrder(id) {
+            logNetworkEvent('GET', `/api/orders/track`, `Checking status for ${id}`);
+            alert(`Live GPS Tracking for ${id}: Package is currently out for delivery in your local area.`);
+        }
+
+        function changeProfilePassword() {
+            const newPass = document.getElementById('profileNewPass').value;
+            if(!newPass || newPass.length < 5) { alert("Please enter a valid password (min 5 characters)."); return; }
+            logNetworkEvent('POST', '/api/auth/reset_password', `Password manually updated in Settings by ${currentUser}`);
+            showToast("Password updated successfully.");
+            document.getElementById('profileNewPass').value = '';
+        }
+
+        // --- Security Alert Logic ---
+        let reminderInterval = null;
+        let isSecured = false;
+
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'admin_security_email' && currentUser !== 'Guest' && !isSecured) {
+                triggerEmailAlert();
+            }
+        });
+
+        function triggerEmailAlert() {
+            document.getElementById('emailTargetUser').innerText = currentUser;
+            document.getElementById('emailModal').style.display = 'flex';
+        }
+
+        function snoozeAlert() {
+            document.getElementById('emailModal').style.display = 'none';
+            if (!reminderInterval) {
+                reminderInterval = setInterval(() => {
+                    if (!isSecured && currentUser !== 'Guest') {
+                        document.getElementById('emailHeaderTitle').innerText = "REMINDER: URGENT SECURITY ALERT";
+                        triggerEmailAlert();
+                    }
+                }, 15000); 
+            }
+        }
+
+        function submitNewPassword() {
+            const newPass = document.getElementById('newSecurePass').value;
+            if (!newPass || newPass.length < 5) { alert("Please enter a strong password."); return; }
+            
+            isSecured = true;
+            clearInterval(reminderInterval);
+            document.getElementById('emailModal').style.display = 'none';
+            
+            logNetworkEvent('POST', '/api/auth/reset_password', `Password successfully updated by ${currentUser} via Alert`);
+            showToast("Password updated. Account is now secure.");
+            document.getElementById('newSecurePass').value = '';
+        }
+
+        window.addEventListener('beforeunload', function() { if (currentUser !== 'Guest') removeActiveSession(currentUser); });
+    </script>
+</body>
+</html>
